@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Quiz } from "../models/quizz.model.js";
 import { Question } from "../models/questions.model.js";
-import { generateQuizQuestions } from "../services/aiQuizService.js";
+import { generateQuizQuestions } from "../services/aiQuiz.service.js";
 import {
     addQuestionsBodySchema,
     createQuizBodySchema,
