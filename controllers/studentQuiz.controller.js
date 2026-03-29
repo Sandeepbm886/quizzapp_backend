@@ -1,15 +1,28 @@
 import { Quiz } from "../models/quizz.model.js";
 import { Question } from "../models/questions.model.js";
-import { Submission } from "../models/submissions.model.js";
-
 import { shuffleArray } from "../utils/shuffle.js";
 import { calculateScore } from "../services/scoring.service.js";
+import {
+    quizIdParamsSchema,
+    submitQuizBodySchema
+} from "../validation/quiz.schema.js";
+import { userHeaderSchema } from "../validation/common.schema.js";
+import { parseRequest, sendValidationError } from "../validation/validate.js";
+import {
+    createSubmission,
+    ensureQuizNotPreviouslyAttempted
+} from "./submission.controller.js";
 
-import { calculateScore } from "../services/scoring.service.js";
-import { updateAnalytics } from "../services/analytics.service.js";
+const validatePayload = (schema, payload, res) => {
+    const result = parseRequest(schema, payload);
 
-import { io } from "../app/index.js";
-import { getLeaderboard } from "../services/leaderboard.service.js";
+    if (!result.success) {
+        sendValidationError(res, result.error);
+        return null;
+    }
+
+    return result.data;
+};
 export const getAvailableQuizzes = async (req, res) => {
 
     try {
@@ -37,7 +50,13 @@ export const startQuiz = async (req, res) => {
 
     try {
 
-        const quizId = req.params.id;
+        const params = validatePayload(quizIdParamsSchema, req.params, res);
+
+        if (!params) {
+            return;
+        }
+
+        const quizId = params.id;
 
         const quiz = await Quiz.findById(quizId);
 
@@ -81,15 +100,27 @@ export const submitQuiz = async (req, res) => {
 
     try {
 
-        const quizId = req.params.id;
-        const studentId = req.headers.userid;
+        const params = validatePayload(quizIdParamsSchema, req.params, res);
+        const headers = validatePayload(userHeaderSchema, req.headers, res);
+        const body = validatePayload(submitQuizBodySchema, req.body, res);
 
-        const { answers, timeTaken, tabSwitchCount, violations } = req.body;
+        if (!params || !headers || !body) {
+            return;
+        }
 
-        const existing = await Submission.findOne({
-            quizId,
-            studentId
-        });
+        const quizId = params.id;
+        const { userid: studentId } = headers;
+        const { answers, timeTaken, tabSwitchCount, violations } = body;
+
+        const quiz = await Quiz.findById(quizId);
+
+        if (!quiz || !quiz.isPublished) {
+            return res.status(404).json({
+                message: "Quiz not available"
+            });
+        }
+
+        const existing = await ensureQuizNotPreviouslyAttempted(quizId, studentId);
 
         if (existing) {
             return res.status(400).json({
@@ -101,22 +132,17 @@ export const submitQuiz = async (req, res) => {
 
         const { score, percentage } = calculateScore(questions, answers);
 
-        const submission = await Submission.create({
+        const submission = await createSubmission({
             quizId,
             studentId,
             answers,
+            questions,
             score,
             percentage,
             timeTaken,
             tabSwitchCount,
             violations
         });
-
-        await updateAnalytics(quizId, score, percentage);
-
-        const leaderboard = await getLeaderboard(quizId);
-
-        io.to(quizId).emit("leaderboardUpdate", leaderboard);
 
         res.json({
             success: true,

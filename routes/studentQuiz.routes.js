@@ -1,17 +1,18 @@
 import express from "express";
+import { requireStudent } from "../middlewares/role.middleware.js";
 
 import {
     getAvailableQuizzes,
     startQuiz,
     submitQuiz
-} from "../controllers/studentQuiz.controller";
+} from "../controllers/studentQuiz.controller.js";
 
 const router = express.Router();
 
-router.get("/available", getAvailableQuizzes);
+router.get("/available", requireStudent, getAvailableQuizzes);
 
-router.get("/:id/start", startQuiz);
+router.get("/:id/start", requireStudent, startQuiz);
 
-router.post("/:id/submit", submitQuiz);
+router.post("/:id/submit", requireStudent, submitQuiz);
 
 export default router;

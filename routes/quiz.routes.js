@@ -1,4 +1,5 @@
 import express from "express";
+import { requireTeacher } from "../middlewares/role.middleware.js";
 
 import {
     createQuiz,
@@ -11,16 +12,16 @@ import {
 
 const router = express.Router();
 
-router.post("/", createQuiz);
+router.post("/", requireTeacher, createQuiz);
 
-router.post("/:id/questions", addQuestions);
+router.post("/:id/questions", requireTeacher, addQuestions);
 
-router.post("/:id/publish", publishQuiz);
+router.post("/:id/publish", requireTeacher, publishQuiz);
 
-router.get("/teacher", getTeacherQuizzes);
+router.get("/teacher", requireTeacher, getTeacherQuizzes);
 
-router.delete("/:id", deleteQuiz);
+router.delete("/:id", requireTeacher, deleteQuiz);
 
-router.post("/ai-generate", generateQuizWithAI);
+router.post("/ai-generate", requireTeacher, generateQuizWithAI);
 
 export default router;

@@ -8,7 +8,9 @@ import {
     generateAiQuizBodySchema,
     quizIdParamsSchema
 } from "../validation/quiz.schema.js";
-import { userHeaderSchema } from "../validation/common.schema.js";
+import {
+    userRoleHeaderSchema
+} from "../validation/common.schema.js";
 import { parseRequest, sendValidationError } from "../validation/validate.js";
 
 const validatePayload = (schema, payload, res) => {
@@ -28,7 +30,7 @@ export const createQuiz = async (req, res) => {
     try {
 
         const body = validatePayload(createQuizBodySchema, req.body, res);
-        const headers = validatePayload(userHeaderSchema, req.headers, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
         if (!body || !headers) {
             return;
@@ -73,14 +75,32 @@ export const addQuestions = async (req, res) => {
 
         const params = validatePayload(quizIdParamsSchema, req.params, res);
         const body = validatePayload(addQuestionsBodySchema, req.body, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
-        if (!params || !body) {
+        if (!params || !body || !headers) {
             await session.abortTransaction();
             return;
         }
 
         const quizId = params.id;
+        const { userid: teacherId } = headers;
         const { questions } = body;
+
+        const quiz = await Quiz.findById(quizId).session(session);
+
+        if (!quiz) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                message: "Quiz not found"
+            });
+        }
+
+        if (quiz.teacherId !== teacherId) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                message: "You can only add questions to your own quiz"
+            });
+        }
 
         const formattedQuestions = questions.map(q => ({
             quizId,
@@ -132,18 +152,26 @@ export const publishQuiz = async (req, res) => {
     try {
 
         const params = validatePayload(quizIdParamsSchema, req.params, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
-        if (!params) {
+        if (!params || !headers) {
             return;
         }
 
         const quizId = params.id;
+        const { userid: teacherId } = headers;
 
         const quiz = await Quiz.findById(quizId);
 
         if (!quiz) {
             return res.status(404).json({
                 message: "Quiz not found"
+            });
+        }
+
+        if (quiz.teacherId !== teacherId) {
+            return res.status(403).json({
+                message: "You can only publish your own quiz"
             });
         }
 
@@ -181,7 +209,7 @@ export const getTeacherQuizzes = async (req, res) => {
 
     try {
 
-        const headers = validatePayload(userHeaderSchema, req.headers, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
         if (!headers) {
             return;
@@ -220,13 +248,31 @@ export const deleteQuiz = async (req, res) => {
     try {
 
         const params = validatePayload(quizIdParamsSchema, req.params, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
-        if (!params) {
+        if (!params || !headers) {
             await session.abortTransaction();
             return;
         }
 
         const quizId = params.id;
+        const { userid: teacherId } = headers;
+
+        const quiz = await Quiz.findById(quizId).session(session);
+
+        if (!quiz) {
+            await session.abortTransaction();
+            return res.status(404).json({
+                message: "Quiz not found"
+            });
+        }
+
+        if (quiz.teacherId !== teacherId) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                message: "You can only delete your own quiz"
+            });
+        }
 
         await Question.deleteMany({ quizId }, { session });
 
@@ -266,7 +312,7 @@ export const generateQuizWithAI = async (req, res) => {
     try {
 
         const body = validatePayload(generateAiQuizBodySchema, req.body, res);
-        const headers = validatePayload(userHeaderSchema, req.headers, res);
+        const headers = validatePayload(userRoleHeaderSchema, req.headers, res);
 
         if (!body || !headers) {
             await session.abortTransaction();

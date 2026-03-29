@@ -10,9 +10,11 @@ export const getQuizAnalytics = async (req, res) => {
 
         if (!analytics) {
             return res.json({
+                success: true,
                 attemptCount: 0,
                 averageScore: 0,
-                scoreDistribution: {}
+                scoreDistribution: {},
+                questionAccuracy: {}
             });
         }
 

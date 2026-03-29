@@ -1,5 +1,19 @@
 import mongoose from "mongoose";
 
+const QuestionAccuracySchema = new mongoose.Schema(
+    {
+        attempts: {
+            type: Number,
+            default: 0
+        },
+        correct: {
+            type: Number,
+            default: 0
+        }
+    },
+    { _id: false }
+);
+
 const AnalyticsSchema = new mongoose.Schema({
     quizId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -24,7 +38,7 @@ const AnalyticsSchema = new mongoose.Schema({
 
     questionAccuracy: {
         type: Map,
-        of: Number
+        of: QuestionAccuracySchema
     }
 });
 

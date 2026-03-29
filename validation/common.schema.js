@@ -18,3 +18,7 @@ export const positiveIntSchema = z
 export const userHeaderSchema = z.object({
   userid: requiredStringSchema,
 });
+
+export const userRoleHeaderSchema = userHeaderSchema.extend({
+  userrole: z.enum(["teacher", "student"]),
+});

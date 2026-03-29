@@ -59,3 +59,12 @@ export const generateAiQuizBodySchema = z.object({
     "Number of questions cannot exceed 50"
   ),
 });
+
+export const submitQuizBodySchema = z.object({
+  answers: z.record(requiredStringSchema).default({}),
+  timeTaken: positiveIntSchema.max(7200, "Time taken cannot exceed 7200 seconds"),
+  tabSwitchCount: z.number().int().min(0, "Tab switch count cannot be negative").optional(),
+  violations: z
+    .array(requiredStringSchema.max(300, "Violation must be 300 characters or fewer"))
+    .optional(),
+});
