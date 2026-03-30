@@ -81,6 +81,9 @@ app.get("/health", (req, res) => {
         status: "ok"
     });
 });
+app.get("/", (req,res)=>{
+  res.send("Quiz API running.....");
+});
 
 app.use("/api/quiz", quizRoutes);
 app.use("/api/student/quiz", studentQuizRoutes);
