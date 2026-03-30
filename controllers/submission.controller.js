@@ -23,16 +23,30 @@ export const createSubmission = async ({
     tabSwitchCount = 0,
     violations = []
 }) => {
-    const submission = await Submission.create({
-        quizId,
-        studentId,
-        answers,
-        score,
-        percentage,
-        timeTaken,
-        tabSwitchCount,
-        violations
-    });
+    let submission;
+
+    try {
+        submission = await Submission.create({
+            quizId,
+            studentId,
+            answers,
+            score,
+            percentage,
+            timeTaken,
+            tabSwitchCount,
+            violations
+        });
+    } catch (error) {
+        if (error?.code === 11000) {
+            const duplicateError = new Error(
+                "You have already attempted this quiz"
+            );
+            duplicateError.statusCode = 400;
+            throw duplicateError;
+        }
+
+        throw error;
+    }
 
     await updateAnalytics(quizId, questions, answers, score, percentage);
 

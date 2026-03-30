@@ -43,6 +43,6 @@ const SubmissionSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-SubmissionSchema.index({ quizId: 1, studentId: 1 });
+SubmissionSchema.index({ quizId: 1, studentId: 1 }, { unique: true });
 
 export const Submission = mongoose.model("Submission", SubmissionSchema);

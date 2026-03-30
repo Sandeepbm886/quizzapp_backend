@@ -153,6 +153,12 @@ export const submitQuiz = async (req, res) => {
 
     } catch (err) {
 
+        if (err?.statusCode) {
+            return res.status(err.statusCode).json({
+                message: err.message
+            });
+        }
+
         console.error(err);
 
         res.status(500).json({
